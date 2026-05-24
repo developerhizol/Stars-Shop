@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel | Stars Shop</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div id="login-screen" class="login-screen">
+        <div class="login-card">
+            <h1><i class="fas fa-crown" style="color: #fbbf24;"></i> Admin Panel</h1>
+            <input type="password" id="admin-password" placeholder="Введите пароль">
+            <button onclick="adminLogin()"><i class="fas fa-sign-in-alt"></i> Войти</button>
+        </div>
+    </div>
+    
+    <div id="admin-content" style="display: none;">
+        <div class="admin-container">
+            <div class="admin-header">
+                <h1><i class="fas fa-star" style="color: #fbbf24;"></i> Stars Shop Admin</h1>
+                <button class="logout-btn" onclick="adminLogout()"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+            </div>
+            
+            <div class="admin-tabs">
+                <div class="admin-tab active" data-tab="dashboard" onclick="switchAdminTab('dashboard')"><i class="fas fa-chart-line"></i> Дашборд</div>
+                <div class="admin-tab" data-tab="orders" onclick="switchAdminTab('orders')"><i class="fas fa-shopping-cart"></i> Заказы</div>
+                <div class="admin-tab" data-tab="users" onclick="switchAdminTab('users')"><i class="fas fa-users"></i> Пользователи</div>
+                <div class="admin-tab" data-tab="promocodes" onclick="switchAdminTab('promocodes')"><i class="fas fa-ticket-alt"></i> Промокоды</div>
+                <div class="admin-tab" data-tab="broadcast" onclick="switchAdminTab('broadcast')"><i class="fas fa-broadcast-tower"></i> Рассылка</div>
+            </div>
+            
+            <div id="tab-dashboard" class="admin-tab-content active">
+                <div class="admin-stats-grid">
+                    <div class="admin-stat-card">
+                        <i class="fas fa-users"></i>
+                        <div>Всего пользователей</div>
+                        <div class="value" id="total-users">0</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <i class="fas fa-shopping-cart"></i>
+                        <div>Всего заказов</div>
+                        <div class="value" id="total-orders">0</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <i class="fas fa-ruble-sign"></i>
+                        <div>Выручка</div>
+                        <div class="value" id="total-revenue">0₽</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <i class="fas fa-calendar-day"></i>
+                        <div>Заказов сегодня</div>
+                        <div class="value" id="today-orders">0</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <i class="fas fa-chart-line"></i>
+                        <div>Выручка сегодня</div>
+                        <div class="value" id="today-revenue">0₽</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <i class="fas fa-crown"></i>
+                        <div>Премиум</div>
+                        <div class="value" id="premium-users">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="tab-orders" class="admin-tab-content">
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-hashtag"></i> ID заказа</th>
+                                <th><i class="fas fa-id-card"></i> User ID</th>
+                                <th><i class="fas fa-star" style="color: #fbbf24;"></i> Звезды</th>
+                                <th><i class="fas fa-ruble-sign"></i> Сумма</th>
+                                <th><i class="fas fa-chart-simple"></i> Статус</th>
+                                <th><i class="fas fa-user"></i> Получатель</th>
+                                <th><i class="fas fa-calendar"></i> Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="tab-users" class="admin-tab-content">
+                <div class="admin-search-box">
+                    <input type="text" id="search-users" placeholder="Поиск по ID или username..." oninput="loadUsers()">
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-id-card"></i> User ID</th>
+                                <th><i class="fas fa-at"></i> Username</th>
+                                <th><i class="fas fa-user"></i> Имя</th>
+                                <th><i class="fas fa-calendar"></i> Дата регистрации</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="tab-promocodes" class="admin-tab-content">
+                <div class="admin-promo-row">
+                    <input type="text" id="new-code" placeholder="Код промокода">
+                    <select id="discount-type">
+                        <option value="percent"><i class="fas fa-percent"></i> Процентная скидка</option>
+                        <option value="fixed"><i class="fas fa-ruble-sign"></i> Фиксированная скидка</option>
+                    </select>
+                    <input type="number" id="discount-value" placeholder="Скидка">
+                    <input type="number" id="max-uses" placeholder="Лимит" value="999">
+                    <button class="admin-btn" onclick="createPromoCode()"><i class="fas fa-plus"></i> Создать</button>
+                </div>
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-ticket-alt"></i> Код</th>
+                                <th><i class="fas fa-percent"></i> Скидка</th>
+                                <th><i class="fas fa-chart-simple"></i> Использовано</th>
+                                <th><i class="fas fa-trash-alt"></i> Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="promocodes-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="tab-broadcast" class="admin-tab-content">
+                <div class="input-group">
+                    <label><i class="fas fa-envelope"></i> Сообщение для рассылки</label>
+                    <textarea id="broadcast-message" rows="6" placeholder="Введите текст сообщения... Поддерживается HTML разметка"></textarea>
+                </div>
+                <button class="admin-btn" onclick="sendBroadcast()"><i class="fas fa-paper-plane"></i> Отправить рассылку</button>
+                <p style="color: #94a3b8; margin-top: 15px;">
+                    <i class="fas fa-info-circle"></i> Рассылка будет отправлена всем пользователям бота
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/admin.js"></script>
+</body>
+</html>

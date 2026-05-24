@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата | Stars Shop</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="payment-container" id="payment-content">
+        <div class="status-icon pending">
+            <i class="fas fa-spinner fa-pulse"></i>
+        </div>
+        <div class="status-title">
+            <i class="fas fa-hourglass-half"></i> Ожидание оплаты
+        </div>
+        <div class="status-message">
+            <i class="fas fa-qrcode"></i> Пожалуйста, завершите оплату в приложении CryptoBot
+        </div>
+        <div class="order-details" id="order-details">
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-hashtag"></i> Заказ:</span>
+                <span class="detail-value" id="order-id">---</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-star" style="color: #fbbf24;"></i> Звезды:</span>
+                <span class="detail-value" id="order-stars">---</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-ruble-sign"></i> Сумма:</span>
+                <span class="detail-value" id="order-total">0₽</span>
+            </div>
+        </div>
+        <div class="timer" id="timer">
+            <i class="fas fa-clock"></i> Проверка статуса...
+        </div>
+        <button class="btn-secondary" onclick="checkPayment()">
+            <i class="fas fa-refresh"></i> Проверить статус
+        </button>
+    </div>
+    
+    <script>
+        const tg = window.Telegram?.WebApp;
+        const orderHash = window.location.pathname.split('/').pop();
+        let checkInterval;
+        
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            tg.BackButton.show();
+            tg.BackButton.onClick(() => {
+                window.location.href = '/';
+            });
+        }
+        
+        const API_URL = '';
+        
+        async function loadOrder() {
+            try {
+                const res = await fetch(`${API_URL}/api/order/${orderHash}`);
+                const order = await res.json();
+                
+                document.getElementById('order-id').textContent = order.order_id;
+                document.getElementById('order-stars').textContent = order.stars_amount;
+                document.getElementById('order-total').textContent = order.total_rub + '₽';
+                
+                if (order.status === 'completed') {
+                    showSuccess(order);
+                } else if (order.status === 'failed') {
+                    showError();
+                }
+                
+                return order;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        
+        async function checkPayment() {
+            const order = await loadOrder();
+            if (order && order.status === 'completed') {
+                if (checkInterval) clearInterval(checkInterval);
+                showSuccess(order);
+            } else {
+                tg?.showAlert('Платёж ещё не найден. Попробуйте позже.');
+            }
+        }
+        
+        function showSuccess(order) {
+            const container = document.getElementById('payment-content');
+            container.innerHTML = `
+                <div class="status-icon success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="status-title" style="color: #10b981;">
+                    <i class="fas fa-party-horn"></i> Оплата прошла!
+                </div>
+                <div class="status-message">
+                    <i class="fas fa-rocket"></i> Звезды отправлены получателю! Спасибо за покупку!
+                </div>
+                <div class="order-details">
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-hashtag"></i> Заказ:</span>
+                        <span class="detail-value">${order.order_id}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-star" style="color: #fbbf24;"></i> Звезды:</span>
+                        <span class="detail-value">${order.stars_amount}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label"><i class="fas fa-ruble-sign"></i> Сумма:</span>
+                        <span class="detail-value">${order.total_rub}₽</span>
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="window.location.href='/'">
+                    <i class="fas fa-home"></i> На главную
+                </button>
+            `;
+        }
+        
+        function showError() {
+            const container = document.getElementById('payment-content');
+            container.innerHTML = `
+                <div class="status-icon error">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="status-title" style="color: #ef4444;">
+                    <i class="fas fa-exclamation-triangle"></i> Ошибка оплаты
+                </div>
+                <div class="status-message">
+                    Попробуйте снова или обратитесь в поддержку.
+                </div>
+                <button class="btn-primary" onclick="window.location.href='/'">
+                    <i class="fas fa-home"></i> На главную
+                </button>
+            `;
+        }
+        
+        loadOrder();
+        checkInterval = setInterval(() => {
+            fetch(`${API_URL}/api/order/${orderHash}`)
+                .then(res => res.json())
+                .then(order => {
+                    if (order.status === 'completed') {
+                        clearInterval(checkInterval);
+                        showSuccess(order);
+                    }
+                });
+        }, 3000);
+        
+        setTimeout(() => {
+            if (checkInterval) clearInterval(checkInterval);
+        }, 120000);
+    </script>
+</body>
+</html>
